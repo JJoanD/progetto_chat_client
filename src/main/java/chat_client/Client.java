@@ -9,31 +9,30 @@ import java.net.*;
 
 public class Client {
 
-    String nomeServer = "172.21.233.198";
-    int portaServer = 6789;
+    String serverIP = "172.21.232.226";
+    int serverPort = 6789;
     Socket mySocket;
-    String nomeClient;
-    String stringaUtente;
-    String stringaRicevuta;
-    DataOutputStream outVersoServer;
-    BufferedReader tastiera ;
+    String clientName;
+    String sentString;
+    String rcvString; 
+    DataOutputStream outToServer;
+    BufferedReader keyboard ;
     ClientInputThread inputThread ;
    
 
-
+    
     public void createSocket(){
         
         try{
 
-            this.mySocket = new Socket(nomeServer , portaServer);
-            outVersoServer = new DataOutputStream(mySocket.getOutputStream());
-            inputThread = new ClientInputThread(mySocket);
-            tastiera = new BufferedReader(new InputStreamReader(System.in));
+            this.mySocket = new Socket(serverIP , serverPort);
+            outToServer = new DataOutputStream(mySocket.getOutputStream());
+            inputThread = new ClientInputThread(this,mySocket);
+            keyboard = new BufferedReader(new InputStreamReader(System.in));
             
           
             
             joinChat();
-           
 
         }catch(UnknownHostException e){
         System.err.println("Host sconosciuto");
@@ -45,7 +44,7 @@ public class Client {
 
     public void closeSocket(){
         try{
-
+            this.mySocket.close();
         }catch(Exception e){
             System.out.println(e.getMessage());
         }
@@ -54,34 +53,40 @@ public class Client {
     public void joinChat(){
         
         try{
-            stringaRicevuta =  inputThread.receiveMessage();
-            System.out.println(stringaRicevuta);
+            while(true){
+            rcvString =  inputThread.receiveMessage();
+            System.out.println(rcvString);
 
-            if(stringaRicevuta.equals("Inserisci il tuo nome: "))
-              nomeClient = sendMessage();
+            if(rcvString.equals("Inserisci il tuo nome: "))
+              clientName = sendMessage();
 
-            stringaRicevuta =  inputThread.receiveMessage();
+            rcvString =  inputThread.receiveMessage();
 
-            
-
-            if(stringaRicevuta.equals("OK")){
-                inputThread.start();
-                 for(;;){
-                    stringaUtente = sendMessage();
-
-                    if (stringaUtente.equals("/exit")) {
-                        break;
-                    }
-                }
+            if(rcvString.equals("BLANK_USER")){
+                System.out.println("Nome utente non ammesso.");
+                continue;
             }
 
-
-            // uscire
-            this.leaveChat();
+            if(rcvString.equals("OK")){
+                inputThread.start();
+                 for(;;){
+                    
+                    sentString = sendMessage();                  
+                }
+            }
             
+            
+            }
+            
+            
+            
+
+
         }catch(Exception e){
             System.out.println(e.getMessage());
         }
+
+        
         
 
     }
@@ -89,8 +94,9 @@ public class Client {
     public void leaveChat(){
          
         try{
-            this.outVersoServer.close();
-            this.mySocket.close();
+            this.outToServer.close();
+            closeSocket();
+            System.exit(1);
             
         }catch(Exception e){
             System.out.println(e.getMessage());
@@ -100,9 +106,9 @@ public class Client {
     public String sendMessage(){
         try{
 
-            String msg = tastiera.readLine();
+            String msg = keyboard.readLine();
 
-            outVersoServer.writeBytes(msg + "\n");
+            outToServer.writeBytes(msg + "\n");
 
 
             return msg;

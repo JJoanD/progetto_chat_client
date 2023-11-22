@@ -6,47 +6,52 @@ import java.net.Socket;
 public class ClientInputThread extends Thread{
     
     Socket clientSocket;
-    BufferedReader inDalServer;
-    String   msgRicevuto;
+    Client client;
+    BufferedReader inputFromServer;
+    String receiveMsg;
 
-    public ClientInputThread(Socket socket){
+    public ClientInputThread(Client client, Socket socket){
         try{
+            this.client = client;
             clientSocket = socket;
-            inDalServer = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
+            inputFromServer = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
         }catch(Exception e){}
         
     }
 
     public String receiveMessage(){
         try{
-            msgRicevuto = inDalServer.readLine();
+            receiveMsg = inputFromServer.readLine();
 
         }catch(Exception e){
-            System.out.println("Messaggio non ricevuto");
+            System.out.println("Interrotta la comunicazione col server");
+            System.exit(1);
         }
         
-        return msgRicevuto;
+        return receiveMsg;
     }
 
 
     @Override
     public void run() {
+
         String msg;
-        for(;;){
-            msg = receiveMessage();
-            if (msg.equals("EXIT")) {
-                break;
-            }
-            
-            if(msg != null){
-                System.out.println(msg);
-            }
-        }
 
         try {
-            inDalServer.close();
+            for(;;){
+                msg = receiveMessage();
+                if (msg.equals("EXIT")) {
+                    client.leaveChat();
+                    break;
+                }
+                
+                if(msg != null){
+                    System.out.println(msg);
+                }
+            
+            }
+            inputFromServer.close();
         } catch (IOException e) {
-            // TODO Auto-generated catch block
             e.printStackTrace();
         }
             
